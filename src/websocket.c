@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef WIN32
+#include <time.h>
+#include <stringcompat.h>
+#endif
+
 #include "websocket.h"
 #include "char_buffer.h"
 
@@ -93,7 +98,11 @@ static char *ws_compute_answer(const char *sec_key) {
   unsigned char hash[20];
   sha1_context ctx;
   sha1_starts(&ctx);
+#ifdef WIN32
+  sha1_update(&ctx, (unsigned char *)text, text_length-1);
+#else
   sha1_update(&ctx, text, text_length-1);
+#endif
   sha1_finish(&ctx, hash);
   free(text);
   text = NULL;
@@ -105,7 +114,11 @@ static char *ws_compute_answer(const char *sec_key) {
   if (!ret) {
     return NULL;
   }
+#ifdef WIN32
+  if (base64_encode((unsigned char *)ret, &length, hash, 20)) {
+#else
   if (base64_encode(ret, &length, hash, 20)) {
+#endif
     free(ret);
     return NULL;
   }
@@ -147,7 +160,11 @@ ws_status ws_send_connect(ws_t self,
   if (!sec_key) {
     return self->on_error(self, "Out of memory");
   }
+#ifdef WIN32
+  if (base64_encode((unsigned char *)sec_key, &key_length, (unsigned char *)sec_ukey, 20)) {
+#else
   if (base64_encode(sec_key, &key_length, sec_ukey, 20)) {
+#endif
     free(sec_key);
     return self->on_error(self, "base64_encode failed");
   }
@@ -361,7 +378,7 @@ ws_status ws_send_close(ws_t self, ws_close close_code, const char *reason) {
 // RECV
 //
 
-#ifndef __MACH__
+#if !defined(__MACH__) && !defined(WIN32) // already in stringcompat.h
 char *strnstr(const char *s1, const char *s2, size_t n) {
   size_t len = strlen(s2);
   if (n >= len) {

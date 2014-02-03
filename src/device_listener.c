@@ -4,15 +4,23 @@
 #include <errno.h>
 #include <getopt.h>
 #include <math.h>
+#ifndef WIN32
 #include <resolv.h>
+#endif
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef WIN32
+#include <sock_stuff.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#else
 #include <sys/fcntl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
+#endif
 
 #include <plist/plist.h>
 
@@ -29,6 +37,7 @@
 //
 
 #define USBMUXD_FILE_PATH "/var/run/usbmuxd"
+#define USBMUXD_PORT 27015
 #define TYPE_PLIST 8
 
 struct dl_private {
@@ -39,8 +48,9 @@ struct dl_private {
 };
 
 int dl_connect(int recv_timeout) {
-  const char *filename = USBMUXD_FILE_PATH;
   int fd = -1;
+#ifndef WIN32
+  const char *filename = USBMUXD_FILE_PATH;
   struct stat fst;
   if (stat(filename, &fst) ||
       !S_ISSOCK(fst.st_mode) ||
@@ -63,7 +73,49 @@ int dl_connect(int recv_timeout) {
     if (!opts || fcntl(fd, F_SETFL, (opts | O_NONBLOCK)) < 0) {
       perror("Could not set socket to non-blocking");
     }
-  } else {
+  } 
+#else
+  int yes = 1;
+  struct hostent *hp;
+  struct sockaddr_in saddr;
+  const char* addr = "127.0.0.1";
+  u_long iMode = 1;
+
+  if ((hp = gethostbyname(addr)) == NULL) {
+      return -1;
+  }
+
+  if (!hp->h_addr) {
+      return -1;
+  }
+
+  if (0 > (fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP))) {
+      return -1;
+  }
+
+  // http://stackoverflow.com/questions/3229860/what-is-the-meaning-of-so-reuseaddr-setsockopt-option-linux
+  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char *)&yes, sizeof(int)) == -1) {
+      close_socket(fd);
+      return -1;
+  }
+
+  memset((void *) &saddr, 0, sizeof(saddr));
+  saddr.sin_family = AF_INET;
+  saddr.sin_addr.s_addr = *(uint32_t *) hp->h_addr;
+  saddr.sin_port = htons(USBMUXD_PORT);
+
+  if (connect(fd, (struct sockaddr *) &saddr, sizeof(saddr)) < 0) {
+      close_socket(fd);
+      return -1;
+  }
+
+  if (recv_timeout < 0) {
+    if (ioctlsocket(fd, FIONBIO, &iMode) != 0) {
+      perror("Could not set socket to non-blocking");
+    }
+  }
+#endif
+  else {
     long millis = (recv_timeout > 0 ? recv_timeout : 5000);
     struct timeval tv;
     tv.tv_sec = (time_t) (millis / 1000);
@@ -108,7 +160,15 @@ dl_status dl_start(dl_t self) {
   tail = dl_sprintf_uint32(tail, 1); // version: 1
   tail = dl_sprintf_uint32(tail, TYPE_PLIST); // type: plist
   tail = dl_sprintf_uint32(tail, 1); // tag: 1
+#ifdef WIN32
+  // stpncpy from https://code.google.com/p/iphone-gcc/source/browse/trunk/gcc-4.2.3/libiberty/stpncpy.c?spec=svn4&r=4
+  size_t n = strlen (xml);
+  if (n > xml_length)
+    n = xml_length;
+  tail = strncpy (tail, xml, xml_length) + n;
+#else
   tail = stpncpy(tail, xml, xml_length);
+#endif  
   free(xml);
 
   dl_status ret = self->send_packet(self, packet, length);

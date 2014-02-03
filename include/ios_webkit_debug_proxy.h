@@ -14,6 +14,10 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+#ifdef WIN32
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 typedef uint8_t iwdp_status;
 #define IWDP_ERROR 1

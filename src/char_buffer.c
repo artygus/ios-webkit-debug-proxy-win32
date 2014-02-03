@@ -210,7 +210,7 @@ size_t cb_sprint(char *to_buf, const char *buf, ssize_t length,
         s += k;
         n += k;
       } else {
-        n += (int)(log10(length - i) + 0.5) + 1;
+        n += (int)(log10((double)(length - i)) + 0.5) + 1;
       }
       break;
     }

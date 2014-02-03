@@ -15,12 +15,12 @@
 #include <string.h>
 
 #include "hash_table.h"
+#include "device_listener.h"
 #include "ios_webkit_debug_proxy.h"
 #include "port_config.h"
 #include "socket_manager.h"
 #include "webinspector.h"
 #include "websocket.h"
-
 
 struct iwdpm_struct {
   char *config;
@@ -32,7 +32,13 @@ struct iwdpm_struct {
   iwdp_t iwdp;
 };
 typedef struct iwdpm_struct *iwdpm_t;
+#ifndef WIN32
 iwdpm_t iwdpm_new();
+#else
+iwdpm_t iwdpm_new() {
+    return iwdpm_t();
+}
+#endif
 void iwdpm_free(iwdpm_t self);
 
 int iwdpm_configure(iwdpm_t self, int argc, char **argv);
@@ -184,7 +190,7 @@ void iwdpm_free(iwdpm_t self) {
 }
 
 iwdpm_t iwdpm_new(int argc, char **argv, int *to_exit) {
-  iwdpm_t self = malloc(sizeof(struct iwdpm_struct));
+  iwdpm_t self = (iwdpm_t)malloc(sizeof(struct iwdpm_struct));
   if (!self) {
     return NULL;
   }

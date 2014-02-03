@@ -36,7 +36,7 @@ intptr_t on_strcmp(ht_t ht, const void *key1, const void *key2) {
   if (key1 == key2 || !key1 || !key2) {
     return (key1 == key2 ? 0 : key1 ? -1 : 1);
   }
-  return strcmp(key1, key2);
+  return strcmp((char *)key1, (char *)key2);
 }
 
 void ht_clear(ht_t self) {

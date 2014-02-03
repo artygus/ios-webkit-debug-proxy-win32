@@ -8,12 +8,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef WIN32
+//#include <libcompat.h>
+#include <winsock2.h>
+#include <windows.h>
+#include <ws2tcpip.h>
+#else
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#endif
 
 #include "char_buffer.h"
 #include "socket_manager.h"
@@ -24,7 +31,11 @@
 #define RECV_FLAGS 0
 #else
 #define SIZEOF_FD_SET sizeof(fd_set)
-#define RECV_FLAGS MSG_DONTWAIT
+  #ifdef WIN32
+    #define RECV_FLAGS 0
+  #else
+    #define RECV_FLAGS MSG_DONTWAIT
+  #endif
 #endif
 
 struct sm_private {
@@ -71,12 +82,15 @@ int sm_listen(int port) {
   if (fd < 0) {
     return -1;
   }
+#ifndef WIN32
   int opts = fcntl(fd, F_GETFL);
+#endif
   struct sockaddr_in local;
   local.sin_family = AF_INET;
   local.sin_addr.s_addr = INADDR_ANY;
   local.sin_port = htons(port);
   int ra = 1;
+#ifndef WIN32
   int nb = 1;
   if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&ra,sizeof(ra)) < 0 ||
       opts < 0 ||
@@ -86,6 +100,18 @@ int sm_listen(int port) {
     close(fd);
     return -1;
   }
+#else
+  // remove setsockopt ?? http://www.wangafu.net/~nickm/libevent-book/01_intro.html
+  // http://stackoverflow.com/questions/3229860/what-is-the-meaning-of-so-reuseaddr-setsockopt-option-linux
+  u_long nb = 1;
+  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&ra, sizeof(ra)) < 0 ||
+      ioctlsocket(fd, FIONBIO, &nb) != 0 ||
+      bind(fd, (struct sockaddr*)&local, sizeof(local)) < 0 ||
+      listen(fd, 5)) {
+    closesocket(fd);
+    return -1;
+  }
+#endif
   return fd;
 }
 
@@ -96,7 +122,9 @@ int sm_connect(const char *hostname, int port) {
   hints.ai_socktype = SOCK_STREAM;
   struct addrinfo *res0;
   char *port_str = NULL;
+#ifndef WIN32  
   asprintf(&port_str, "%d", port);
+#endif  
   int ret = getaddrinfo(hostname, port_str, &hints, &res0);
   free(port_str);
   if (ret) {
@@ -108,13 +136,27 @@ int sm_connect(const char *hostname, int port) {
   struct addrinfo *res;
   for (res = res0; res; res = res->ai_next) {
     if (fd > 0) {
+#ifdef WIN32
+      closesocket(fd);
+#else
       close(fd);
+#endif    
     }
     fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (fd < 0) {
       continue;
     }
     // try non-blocking connect, usually succeeds even if unreachable
+#ifdef WIN32
+    // use ioctlsocket ?? https://www.allegro.cc/forums/thread/401705
+    // http://www.win32developer.com/tutorial/winsock/winsock_tutorial_3.shtm
+    u_long iMode = 1;
+    if (ioctlsocket(fd, FIONBIO, &iMode) != 0 || 
+        ((connect(fd, res->ai_addr, res->ai_addrlen) == INVALID_SOCKET) ==
+         (errno != EINPROGRESS))) {
+      continue;
+    }
+#else
     int opts = fcntl(fd, F_GETFL);
     if (opts < 0 ||
         fcntl(fd, F_SETFL, (opts | O_NONBLOCK)) < 0 ||
@@ -122,6 +164,7 @@ int sm_connect(const char *hostname, int port) {
          (errno != EINPROGRESS))) {
       continue;
     }
+#endif
     // try blocking select to verify its reachable
     struct timeval to;
     to.tv_sec = 0;
@@ -129,22 +172,41 @@ int sm_connect(const char *hostname, int port) {
     fd_set error_fds;
     FD_ZERO(&error_fds);
     FD_SET(fd, &error_fds);
+#ifdef WIN32
+    iMode = 0;
+    if(ioctlsocket(fd, FIONBIO, &iMode) != 0) {
+        continue;
+    }
+#else
     if (fcntl(fd, F_SETFL, opts) < 0) {
       continue;
     }
+#endif
     int is_error = select(fd + 1, &error_fds, NULL, NULL, &to);
     if (is_error) {
       continue;
     }
     // success!  set back to non-blocking and return
+
+#ifdef WIN32
+    iMode = 1;
+    if(ioctlsocket(fd, FIONBIO, &iMode) != 0) {
+        continue;
+    }
+#else
     if (fcntl(fd, F_SETFL, (opts | O_NONBLOCK)) < 0) {
       continue;
     }
+#endif
     ret = fd;
     break;
   }
   if (fd > 0 && ret <= 0) {
-    close(fd);
+#ifdef WIN32
+      closesocket(fd);
+#else
+      close(fd);
+#endif  
   }
   freeaddrinfo(res0);
   return ret;
@@ -197,7 +259,11 @@ sm_status sm_remove_fd(sm_t self, int fd) {
   bool is_server = FD_ISSET(fd, my->server_fds);
   sm_on_debug(self, "ss.remove%s_fd(%d)", (is_server ? "_server" : ""), fd);
   sm_status ret = self->on_close(self, fd, value, is_server);
+#ifdef WIN32
+  closesocket(fd);
+#else
   close(fd);
+#endif  
   FD_CLR(fd, my->all_fds);
   if (is_server) {
     FD_CLR(fd, my->server_fds);
@@ -239,7 +305,7 @@ sm_status sm_send(sm_t self, int fd, void *value, const char *data,
   if (!sendq) {
     // send as much as we can without blocking
     while (1) {
-      ssize_t sent_bytes = send(fd, (void*)head, (tail - head), 0);
+      ssize_t sent_bytes = send(fd, (char *)head, (tail - head), 0);
       if (sent_bytes <= 0) {
         if (sent_bytes && errno != EWOULDBLOCK) {
           sm_on_debug(self, "ss.failed fd=%d", fd);
@@ -284,7 +350,14 @@ sm_status sm_send(sm_t self, int fd, void *value, const char *data,
 void sm_accept(sm_t self, int fd) {
   sm_private_t my = self->private_state;
   while (1) {
+#ifdef WIN32
+    // not sure if can do it with NULLs
+    struct sockaddr_in addr;    
+    int len = sizeof(struct sockaddr_in);
+    int new_fd = accept(fd, (struct sockaddr *)&addr, &len);
+#else
     int new_fd = accept(fd, NULL, NULL);
+#endif
     if (new_fd < 0) {
       if (errno != EWOULDBLOCK) {
         perror("accept failed");
@@ -298,17 +371,25 @@ void sm_accept(sm_t self, int fd) {
     void *value = ht_get_value(my->fd_to_value, HT_KEY(fd));
     void *new_value = NULL;
     if (self->on_accept(self, fd, value, new_fd, &new_value)) {
+#ifdef WIN32
+      closesocket(new_fd);
+#else
       close(new_fd);
+#endif
     } else if (self->add_fd(self, new_fd, new_value, false)) {
       self->on_close(self, new_fd, new_value, false);
+#ifdef WIN32
+      closesocket(new_fd);
+#else
       close(new_fd);
+#endif
     }
   }
 }
 
 void sm_resend(sm_t self, int fd) {
   sm_private_t my = self->private_state;
-  sm_sendq_t sendq = ht_get_value(my->fd_to_sendq, HT_KEY(fd));
+  sm_sendq_t sendq = (sm_sendq_t)ht_get_value(my->fd_to_sendq, HT_KEY(fd));
   while (sendq) {
     char *head = sendq->head;
     char *tail = sendq->tail;
@@ -316,7 +397,7 @@ void sm_resend(sm_t self, int fd) {
     sm_on_debug(self, "ss.sendq<%p> resume send to fd=%d len=%zd", sendq, fd,
         (tail - head));
     while (head < tail) {
-      ssize_t sent_bytes = send(fd, (void*)head, (tail - head), 0);
+      ssize_t sent_bytes = send(fd, (char *)head, (tail - head), 0);
       if (sent_bytes <= 0) {
         if (sent_bytes && errno != EWOULDBLOCK) {
           perror("sendq retry failed");

@@ -8,8 +8,11 @@
 extern "C" {
 #endif
 
-
 #include <stdlib.h>
+#ifdef WIN32
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 
 struct cb_struct {

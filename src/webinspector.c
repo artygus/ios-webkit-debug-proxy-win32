@@ -9,8 +9,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef WIN32
+#include <fcntl.h>
+#include <dirent.h>
+#include <winsock2.h>
+#include <windows.h>
+#include <time.h>
+#include <stringcompat.h>
+#else
 #include <sys/fcntl.h>
 #include <sys/socket.h>
+#endif
 #include <sys/stat.h>
 
 #ifdef __MACH__
@@ -170,8 +179,13 @@ int wi_connect(const char *device_id, char **to_device_id,
   }
 
   if (recv_timeout < 0) {
-    int opts = fcntl(fd, F_GETFL);
-    if (!opts || fcntl(fd, F_SETFL, (opts | O_NONBLOCK)) < 0) {
+#ifdef WIN32
+  u_long iMode = 1;
+  if (ioctlsocket(fd, FIONBIO, &iMode) != 0) {
+#else
+  int opts = fcntl(fd, F_GETFL);
+  if (!opts || fcntl(fd, F_SETFL, (opts | O_NONBLOCK)) < 0) {
+#endif    
       perror("Could not set socket to non-blocking");
       goto leave_cleanup;
     }
@@ -192,7 +206,11 @@ int wi_connect(const char *device_id, char **to_device_id,
 
 leave_cleanup:
   if (ret < 0 && fd > 0) {
+#ifdef WIN32
+    closesocket(fd);
+#else
     close(fd);
+#endif
   }
   // don't call usbmuxd_disconnect(fd)!
   //idevice_disconnect(connection);

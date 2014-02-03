@@ -7,9 +7,12 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-
+    
 #include <stdint.h>
-
+#ifdef WIN32
+#include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 typedef uint8_t ws_opcode;
 #define OPCODE_CONTINUATION  0x0

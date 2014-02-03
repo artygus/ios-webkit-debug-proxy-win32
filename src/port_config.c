@@ -9,6 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef WIN32
+#include <stringcompat.h>
+#include <iocompat.h>
+#endif
 
 #include "port_config.h"
 
@@ -33,7 +37,7 @@ struct pc_struct {
 };
 
 pc_t pc_new() {
-  pc_t self = malloc(sizeof(struct pc_struct));
+  pc_t self = (pc_t)malloc(sizeof(struct pc_struct));
   if (self) {
     memset(self, 0, sizeof(struct pc_struct));
   }
@@ -67,7 +71,7 @@ void pc_free(pc_t self) {
 }
 
 void pc_add(pc_t self, const char *device_id, int min_port, int max_port) {
-  pc_entry_t e = malloc(sizeof(struct pc_entry_struct));
+  pc_entry_t e = (pc_entry_t)malloc(sizeof(struct pc_entry_struct));
   e->device_id = device_id;
   e->min_port = min_port;
   e->max_port = max_port;
@@ -83,7 +87,7 @@ void pc_add(pc_t self, const char *device_id, int min_port, int max_port) {
 int pc_parse(pc_t self, const char *line, size_t len,
     char **to_device_id, int *to_min_port, int *to_max_port) {
   if (!self->re) {
-    self->re = malloc(sizeof(regex_t));
+    self->re = (regex_t *)malloc(sizeof(regex_t));
     if (regcomp(self->re, 
           "^[ \t]*"
           "(([a-f0-9]{40}|\\*|null)[ \t]*:?|:)"
@@ -94,11 +98,11 @@ int pc_parse(pc_t self, const char *line, size_t len,
       return -1;
     }
     size_t ngroups = self->re->re_nsub + 1;
-    self->groups = calloc(ngroups, sizeof(regmatch_t));
+    self->groups = (regmatch_t *)calloc(ngroups, sizeof(regmatch_t));
   }
   size_t ngroups = self->re->re_nsub + 1;
   regmatch_t *groups = self->groups;
-  char *line2 = calloc(len+1, sizeof(char));
+  char *line2 = (char *)calloc(len+1, sizeof(char));
   memcpy(line2, line, len);
   int is_not_match = regexec(self->re, line2, ngroups, groups, 0);
   free(line2);

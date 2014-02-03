@@ -15,6 +15,10 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#ifdef WIN32
+#include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 
 typedef uint8_t dl_status;

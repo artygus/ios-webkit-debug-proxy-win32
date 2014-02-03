@@ -14,6 +14,10 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+#ifdef WIN32
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 // Bind a server port, return the file descriptor (or -1 for error).
 int sm_listen(int port);
@@ -34,6 +38,7 @@ struct sm_struct;
 typedef struct sm_struct *sm_t;
 sm_t sm_new(size_t buffer_length);
 void sm_free(sm_t self);
+sm_status sm_send(sm_t self, int fd, void *value, const char *data, size_t length);
 
 struct sm_struct {
 
