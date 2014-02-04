@@ -109,10 +109,12 @@ wi_status idevice_connection_get_fd(idevice_connection_t connection,
   }
   int fd = (int)(long)connection_private->data;
   struct stat fd_stat;
+#ifndef WIN32
   if (fstat(fd, &fd_stat) < 0 || !S_ISSOCK(fd_stat.st_mode)) {
     perror("idevice_connection fd is not a socket?");
     return WI_ERROR;
   }
+#endif
   *to_fd = fd;
   return WI_SUCCESS;
 }

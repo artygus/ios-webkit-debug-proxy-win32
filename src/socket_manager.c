@@ -140,7 +140,7 @@ int sm_connect(const char *hostname, int port) {
     u_long iMode = 1;
     if (ioctlsocket(fd, FIONBIO, &iMode) != 0 || 
         ((connect(fd, res->ai_addr, res->ai_addrlen) == INVALID_SOCKET) ==
-         (errno != EINPROGRESS))) {
+        (WSAGetLastError() != WSAEINPROGRESS))) {
       continue;
     }
 #else
@@ -294,7 +294,11 @@ sm_status sm_send(sm_t self, int fd, void *value, const char *data,
     while (1) {
       ssize_t sent_bytes = send(fd, (char *)head, (tail - head), 0);
       if (sent_bytes <= 0) {
+#ifdef WIN32
+        if (sent_bytes && WSAGetLastError() != WSAEWOULDBLOCK) {
+#else
         if (sent_bytes && errno != EWOULDBLOCK) {
+#endif
           sm_on_debug(self, "ss.failed fd=%d", fd);
           perror("send failed");
           return SM_ERROR;
@@ -457,13 +461,13 @@ void sm_recv(sm_t self, int fd) {
   sm_private_t my = self->private_state;
   my->curr_recv_fd = fd;
   while (1) {
-#ifdef WIN32
-    ssize_t read_bytes = socket_receive_timeout(fd, my->tmp_buf, my->tmp_buf_length, RECV_FLAGS, 1000);
-#else
     ssize_t read_bytes = recv(fd, my->tmp_buf, my->tmp_buf_length, RECV_FLAGS);
-#endif
     if (read_bytes < 0) {
+#ifdef WIN32
+      if (WSAGetLastError() != WSAEWOULDBLOCK) {
+#else
       if (errno != EWOULDBLOCK) {
+#endif
         perror("recv failed");
         self->remove_fd(self, fd);
       }
@@ -507,10 +511,18 @@ int sm_select(sm_t self, int timeout_secs) {
     return 0; // timeout, select again
   }
   if (num_ready < 0) {
+#ifdef WIN32
+    if (WSAGetLastError() != WSAEINTR && WSAGetLastError() != WSAEINPROGRESS) {
+#else
     if (errno != EINTR && errno != EAGAIN) {
+#endif
       // might want to sleep here?
       perror("select failed");
+#ifdef WIN32
+      return -WSAGetLastError();
+#else
       return -errno;
+#endif
     }
     return 0;
   }
