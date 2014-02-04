@@ -669,11 +669,7 @@ ws_status iwdp_on_list_request(ws_t ws, bool is_head, bool want_json) {
   if (iport->device_id) {
     const char *fe_url = my->frontend;
     char *frontend_url = NULL;
-#ifdef WIN32
-    if (fe_url && strnicmp(fe_url, "chrome-devtools://", 18)) {
-#else
-    if (fe_url && strncasecmp(fe_url, "chrome-devtools://", 18)) {
-#endif      
+    if (fe_url && strncasecmp(fe_url, "chrome-devtools://", 18)) {    
       // allow chrome-devtools links, even though Chrome's sandbox blocks them:
       //   Not allowed to load local resource: chrome-devtools://...
       // Maybe a future Chrome flag (TBD?) will permit this.
@@ -817,11 +813,7 @@ ws_status iwdp_on_static_request_for_file(ws_t ws, bool is_head,
     // file doesn't exist.  Provide help if this is a "*.js" with a matching
     // "*.qrc", e.g. WebKit's qresource-compiled "InspectorBackendCommands.js"
     bool is_qrc = false;
-#ifdef WIN32
-    if (strlen(path) > 3 && !stricmp(path + strlen(path) - 3, ".js")) {
-#else
     if (strlen(path) > 3 && !strcasecmp(path + strlen(path) - 3, ".js")) {
-#endif
       char *qrc_path;
       asprintf(&qrc_path, "%.*sqrc", (int)(strlen(path) - 2), path);
       int qrc_fd = open(qrc_path, O_RDONLY);
@@ -901,11 +893,7 @@ ws_status iwdp_on_static_request_for_http(ws_t ws, bool is_head,
   iwdp_t self = iws->iport->self;
   const char *fe_url = self->private_state->frontend;
 
-#ifdef WIN32
-  if (!resource || !fe_url || strnicmp(fe_url, "http://", 7)) {
-#else
   if (!resource || !fe_url || strncasecmp(fe_url, "http://", 7)) {
-#endif
     return IWDP_ERROR; // internal error
   }
 
@@ -998,19 +986,10 @@ ws_status iwdp_on_static_request(ws_t ws, bool is_head, const char *resource,
     return iwdp_on_not_found(ws, is_head, resource, "Frontend is disabled.");
   }
   bool is_file = !strstr(fe_url, "://");
-#ifdef WIN32
-  if (is_file || !strnicmp(fe_url, "file://", 7)) {
-#else
   if (is_file || !strncasecmp(fe_url, "file://", 7)) {
-#endif
     return iwdp_on_static_request_for_file(ws, is_head, resource,
         fe_url + (is_file ? 0 : 7), to_keep_alive);
-
-#ifdef WIN32
-  } else if (!strnicmp(fe_url, "http://", 7)) {
-#else
   } else if (!strncasecmp(fe_url, "http://", 7)) {
-#endif
     return iwdp_on_static_request_for_http(ws, is_head, resource,
         to_keep_alive);
   }
@@ -1810,11 +1789,7 @@ iwdp_status iwdp_get_content_type(const char *path, bool is_local,
       size_t n = (sizeof(EXT_TO_MIME) / sizeof(EXT_TO_MIME[0]));
       size_t i;
       for (i = 0; i < n; i++) {
-#ifdef WIN32
-        if (!stricmp(fext, EXT_TO_MIME[i][0])) {
-#else
         if (!strcasecmp(fext, EXT_TO_MIME[i][0])) {
-#endif
           mime = EXT_TO_MIME[i][1];
           break;
         }
