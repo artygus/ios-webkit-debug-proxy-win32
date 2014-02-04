@@ -627,7 +627,13 @@ ws_status iwdp_send_data(ws_t ws, const char *data, size_t length) {
   iwdp_iws_t iws = (iwdp_iws_t)ws->state;
   iwdp_t self = iws->iport->self;
   return (self->send(self, iws->ws_fd, data, length) ?
-      ws->on_error(ws, "Unable to send %zd bytes of data", length) :
+      ws->on_error(ws, 
+#ifdef WIN32
+        "Unable to send %Id bytes of data", 
+#else
+        "Unable to send %zd bytes of data", 
+#endif
+        length) :
       WS_SUCCESS);
 }
 
@@ -638,7 +644,11 @@ ws_status iwdp_send_http(ws_t ws, bool is_head, const char *status,
   char *data;
   asprintf(&data,
       "HTTP/1.1 %s\r\n"
+#ifdef WIN32
+      "Content-length: %Id\r\n"
+#else
       "Content-length: %zd\r\n"
+#endif
       "Connection: close"
       "%s%s\r\n\r\n%s",
       status, (content ? strlen(content) : 0),
@@ -851,7 +861,11 @@ ws_status iwdp_on_static_request_for_file(ws_t ws, bool is_head,
   char *data = NULL;
   asprintf(&data,
       "HTTP/1.1 200 OK\r\n"
+#ifdef WIN32
+      "Content-length: %Id\r\n"
+#else
       "Content-length: %zd\r\n"
+#endif
       "Connection: close"
       "%s%s\r\n\r\n",
       length, (ctype ? "\r\nContent-Type: " : ""), (ctype ? ctype : ""));
@@ -1114,7 +1128,13 @@ wi_status iwdp_send_packet(wi_t wi, const char *packet, size_t length) {
   iwdp_iwi_t iwi = (iwdp_iwi_t)wi->state;
   iwdp_t self = iwi->iport->self;
   return (self->send(self, iwi->wi_fd, packet, length) ?
-      wi->on_error(wi, "Unable to send %zd bytes to inspector", length) :
+      wi->on_error(wi, 
+#ifdef WIN32
+        "Unable to send %Id bytes to inspector",
+#else
+        "Unable to send %zd bytes to inspector", 
+#endif
+        length) :
       WI_SUCCESS);
 }
 

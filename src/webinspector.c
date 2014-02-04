@@ -270,7 +270,13 @@ wi_status wi_on_debug(wi_t self, const char *message,
   if (self->is_debug && *self->is_debug) {
     char *text;
     cb_asprint(&text, buf, length, 80, 30);
-    printf("%s[%zd]:\n%s\n", message, length, text);
+    printf(
+#ifdef WIN32
+        "%s[%Id]:\n%s\n", 
+#else
+        "%s[%zd]:\n%s\n", 
+#endif
+        message, length, text);
     free(text);
   }
   return WI_SUCCESS;
@@ -686,7 +692,11 @@ wi_status wi_parse_length(wi_t self, const char *buf, size_t *to_length) {
   if (MAX_BODY_LENGTH > 0 && *to_length > MAX_BODY_LENGTH) {
 #define TO_CHAR(c) ((c) >= ' ' && (c) < '~' ? (c) : '.')
     return self->on_error(self, "Invalid packet header "
+#ifdef WIN32
+        "0x%x%x%x%x == %c%c%c%c == %Id",
+#else
         "0x%x%x%x%x == %c%c%c%c == %zd",
+#endif
         buf[0], buf[1], buf[2], buf[3],
         TO_CHAR(buf[0]), TO_CHAR(buf[1]),
         TO_CHAR(buf[2]), TO_CHAR(buf[3]),
@@ -832,7 +842,13 @@ wi_status wi_recv_packet(wi_t self, const char *packet, size_t length) {
   // invalid packet
   char *text = NULL;
   if (body_length != length - 4) {
-    asprintf(&text, "size %zd != %zd - 4", body_length, length);
+    asprintf(&text, 
+#ifdef WIN32
+        "size %Id != %Id - 4", 
+#else
+        "size %zd != %zd - 4", 
+#endif
+        body_length, length);
   } else {
     cb_asprint(&text, packet, length, 80, 50);
   }

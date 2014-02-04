@@ -206,7 +206,13 @@ size_t cb_sprint(char *to_buf, const char *buf, ssize_t length,
       APPEND(' ');
       APPEND('+');
       if (s) {
-        size_t k = sprintf(s, "%zd", length - i);
+        size_t k = sprintf(s, 
+#ifdef WIN32
+            "%Id",
+#else
+            "%zd", 
+#endif
+            length - i);
         s += k;
         n += k;
       } else {

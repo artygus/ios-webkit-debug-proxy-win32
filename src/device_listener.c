@@ -12,9 +12,11 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef WIN32
-#include <sock_stuff.h>
+#include <socket.h>
+#include <windows.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <stringcompat.h>
 #else
 #include <sys/fcntl.h>
 #include <sys/socket.h>
@@ -75,39 +77,8 @@ int dl_connect(int recv_timeout) {
     }
   } 
 #else
-  int yes = 1;
-  struct hostent *hp;
-  struct sockaddr_in saddr;
-  const char* addr = "127.0.0.1";
   u_long iMode = 1;
-
-  if ((hp = gethostbyname(addr)) == NULL) {
-      return -1;
-  }
-
-  if (!hp->h_addr) {
-      return -1;
-  }
-
-  if (0 > (fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP))) {
-      return -1;
-  }
-
-  // http://stackoverflow.com/questions/3229860/what-is-the-meaning-of-so-reuseaddr-setsockopt-option-linux
-  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char *)&yes, sizeof(int)) == -1) {
-      close_socket(fd);
-      return -1;
-  }
-
-  memset((void *) &saddr, 0, sizeof(saddr));
-  saddr.sin_family = AF_INET;
-  saddr.sin_addr.s_addr = *(uint32_t *) hp->h_addr;
-  saddr.sin_port = htons(USBMUXD_PORT);
-
-  if (connect(fd, (struct sockaddr *) &saddr, sizeof(saddr)) < 0) {
-      close_socket(fd);
-      return -1;
-  }
+  fd = socket_connect("127.0.0.1", USBMUXD_PORT);
 
   if (recv_timeout < 0) {
     if (ioctlsocket(fd, FIONBIO, &iMode) != 0) {
@@ -160,15 +131,7 @@ dl_status dl_start(dl_t self) {
   tail = dl_sprintf_uint32(tail, 1); // version: 1
   tail = dl_sprintf_uint32(tail, TYPE_PLIST); // type: plist
   tail = dl_sprintf_uint32(tail, 1); // tag: 1
-#ifdef WIN32
-  // stpncpy from https://code.google.com/p/iphone-gcc/source/browse/trunk/gcc-4.2.3/libiberty/stpncpy.c?spec=svn4&r=4
-  size_t n = strlen (xml);
-  if (n > xml_length)
-    n = xml_length;
-  tail = strncpy (tail, xml, xml_length) + n;
-#else
   tail = stpncpy(tail, xml, xml_length);
-#endif  
   free(xml);
 
   dl_status ret = self->send_packet(self, packet, length);

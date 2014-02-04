@@ -70,7 +70,13 @@ ws_status ws_on_debug(ws_t self, const char *message,
   if (self->is_debug && *self->is_debug) {
     char *text;
     cb_asprint(&text, buf, length, 80, 50);
-    printf("%s[%zd]:\n%s\n", message, length, text);
+     printf(
+#ifdef WIN32
+        "%s[%Id]:\n%s\n",
+#else
+        "%s[%zd]:\n%s\n",
+#endif
+        message, length, text);
     free(text);
   }
   return WS_SUCCESS;
@@ -175,7 +181,13 @@ ws_status ws_send_connect(ws_t self,
       (origin ? strlen(origin) : 0));
   cb_clear(my->out);
   if (cb_ensure_capacity(my->out, needed)) {
-    return self->on_error(self, "Output %zd exceeds buffer capacity",
+
+    return self->on_error(self, 
+#ifdef WIN32
+        "Output %Id exceeds buffer capacity",
+#else
+        "Output %zd exceeds buffer capacity",
+#endif
         needed);
   }
   char *out_tail = my->out->tail;
@@ -272,7 +284,12 @@ ws_status ws_send_frame(ws_t self,
       return self->on_error(self, "Control 0x%x not fin", opcode);
     }
     if (payload_length > 125) {
-      return self->on_error(self, "Control 0x%x payload_length %zd > 125",
+      return self->on_error(self, 
+#ifdef WIN32
+          "Control 0x%x payload_length %Id > 125",
+#else
+          "Control 0x%x payload_length %zd > 125"
+#endif
           opcode, payload_length);
     }
   }
@@ -296,7 +313,11 @@ ws_status ws_send_frame(ws_t self,
       utf8_state = validate_utf8[utf8_state + ch];
       if (utf8_state == UTF8_INVALID) {
         return self->on_error(self,
+#ifdef WIN32
+            "Invalid %sUTF8 character 0x%x at %Id",
+#else
             "Invalid %sUTF8 character 0x%x at %zd",
+#endif
             (is_masking ? "masked " :""), ch,
             payload_head-1 - payload_data);
       }
@@ -544,7 +565,11 @@ ws_status ws_read_frame_length(ws_t self) {
   size_t payload_length = (*in_head & 0x7f);
   if (is_control && payload_length > 125) {
     return self->on_error(self,
+#ifdef WIN32
+        "Control 0x%x payload_length %Id > 125",
+#else
         "Control 0x%x payload_length %zd > 125",
+#endif
         opcode, payload_length);
   }
   in_head++;
@@ -617,7 +642,12 @@ ws_status ws_read_frame(ws_t self,
 
   if (cb_ensure_capacity(my->data, payload_length)) { 
     return self->on_error(self,
-        "Payload %zd exceeds buffer capacity", payload_length);
+#ifdef WIN32
+        "Payload %Id exceeds buffer capacity", 
+#else
+        "Payload %zd exceeds buffer capacity", 
+#endif
+        payload_length);
   }
   char *data_tail = my->data->tail;
 
@@ -645,7 +675,11 @@ ws_status ws_read_frame(ws_t self,
       utf8_state = validate_utf8[utf8_state + ch];
       if (utf8_state == UTF8_INVALID) {
         return self->on_error(self,
+#ifdef WIN32
+            "Invalid %sUTF8 character 0x%x at %Id",
+#else
             "Invalid %sUTF8 character 0x%x at %zd",
+#endif
             (is_masking ? "masked " :""), ch,
             dt-1 - my->data->tail);
       }

@@ -9,9 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef WIN32
-//#include <libcompat.h>
-#include <winsock2.h>
+#include <socket.h>
 #include <windows.h>
+#include <stringcompat.h>
 #include <ws2tcpip.h>
 #else
 #include <netdb.h>
@@ -26,16 +26,12 @@
 #include "socket_manager.h"
 #include "hash_table.h"
 
-#ifdef __MACH__
+#if defined(__MACH__) || defined(WIN32)
 #define SIZEOF_FD_SET sizeof(struct fd_set)
 #define RECV_FLAGS 0
 #else
 #define SIZEOF_FD_SET sizeof(fd_set)
-  #ifdef WIN32
-    #define RECV_FLAGS 0
-  #else
-    #define RECV_FLAGS MSG_DONTWAIT
-  #endif
+#define RECV_FLAGS MSG_DONTWAIT
 #endif
 
 struct sm_private {
@@ -78,19 +74,21 @@ void sm_sendq_free(sm_sendq_t sendq);
 
 
 int sm_listen(int port) {
+#ifdef WIN32
+  return socket_create(port, true);
+#else
   int fd = socket(AF_INET, SOCK_STREAM, 0);
   if (fd < 0) {
     return -1;
   }
-#ifndef WIN32
+
   int opts = fcntl(fd, F_GETFL);
-#endif
   struct sockaddr_in local;
   local.sin_family = AF_INET;
   local.sin_addr.s_addr = INADDR_ANY;
   local.sin_port = htons(port);
   int ra = 1;
-#ifndef WIN32
+
   int nb = 1;
   if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&ra,sizeof(ra)) < 0 ||
       opts < 0 ||
@@ -100,19 +98,9 @@ int sm_listen(int port) {
     close(fd);
     return -1;
   }
-#else
-  // remove setsockopt ?? http://www.wangafu.net/~nickm/libevent-book/01_intro.html
-  // http://stackoverflow.com/questions/3229860/what-is-the-meaning-of-so-reuseaddr-setsockopt-option-linux
-  u_long nb = 1;
-  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&ra, sizeof(ra)) < 0 ||
-      ioctlsocket(fd, FIONBIO, &nb) != 0 ||
-      bind(fd, (struct sockaddr*)&local, sizeof(local)) < 0 ||
-      listen(fd, 5)) {
-    closesocket(fd);
-    return -1;
-  }
-#endif
+
   return fd;
+#endif
 }
 
 int sm_connect(const char *hostname, int port) {
@@ -122,9 +110,8 @@ int sm_connect(const char *hostname, int port) {
   hints.ai_socktype = SOCK_STREAM;
   struct addrinfo *res0;
   char *port_str = NULL;
-#ifndef WIN32  
   asprintf(&port_str, "%d", port);
-#endif  
+
   int ret = getaddrinfo(hostname, port_str, &hints, &res0);
   free(port_str);
   if (ret) {
@@ -214,7 +201,7 @@ int sm_connect(const char *hostname, int port) {
 
 
 sm_status sm_on_debug(sm_t self, const char *format, ...) {
-  if (self->is_debug && *self->is_debug) {
+    if (self->is_debug && *self->is_debug) {
     va_list args;
     va_start(args, format);
     vfprintf(stdout, format, args);
@@ -333,7 +320,12 @@ sm_status sm_send(sm_t self, int fd, void *value, const char *data,
     ht_put(my->fd_to_sendq, HT_KEY(fd), newq);
     FD_SET(fd, my->send_fds);
   }
-  sm_on_debug(self, "ss.sendq<%p> new fd=%d recv_fd=%d length=%zd"
+  sm_on_debug(self, 
+#ifdef WIN32
+      "ss.sendq<%p> new fd=%d recv_fd=%d length=%Id"
+#else
+      "ss.sendq<%p> new fd=%d recv_fd=%d length=%zd"
+#endif
       ", prev=<%p>", newq, fd, curr_recv_fd, tail - head, sendq);
   if (curr_recv_fd && FD_ISSET(curr_recv_fd, my->recv_fds)) {
     // block the current recv_fd, to prevent our sendq from growing too large.
@@ -350,22 +342,19 @@ sm_status sm_send(sm_t self, int fd, void *value, const char *data,
 void sm_accept(sm_t self, int fd) {
   sm_private_t my = self->private_state;
   while (1) {
-#ifdef WIN32
-    // not sure if can do it with NULLs
-    struct sockaddr_in addr;    
-    int len = sizeof(struct sockaddr_in);
-    int new_fd = accept(fd, (struct sockaddr *)&addr, &len);
-#else
     int new_fd = accept(fd, NULL, NULL);
-#endif
     if (new_fd < 0) {
+#ifdef WIN32
+      if(WSAGetLastError() != WSAEWOULDBLOCK) { 
+#else
       if (errno != EWOULDBLOCK) {
+#endif
         perror("accept failed");
         self->remove_fd(self, fd);
         return;
       }
       break;
-    }
+    } 
     sm_on_debug(self, "ss.accept server=%d new_client=%d",
         fd, new_fd);
     void *value = ht_get_value(my->fd_to_value, HT_KEY(fd));
@@ -394,12 +383,22 @@ void sm_resend(sm_t self, int fd) {
     char *head = sendq->head;
     char *tail = sendq->tail;
     // send as much as we can without blocking
-    sm_on_debug(self, "ss.sendq<%p> resume send to fd=%d len=%zd", sendq, fd,
+    sm_on_debug(self, 
+#ifdef WIN32
+        "ss.sendq<%p> resume send to fd=%d len=%Id", 
+#else
+        "ss.sendq<%p> resume send to fd=%d len=%zd", 
+#endif
+        sendq, fd,
         (tail - head));
     while (head < tail) {
       ssize_t sent_bytes = send(fd, (char *)head, (tail - head), 0);
       if (sent_bytes <= 0) {
+#ifdef WIN32
+        if (sent_bytes && WSAGetLastError() != WSAEWOULDBLOCK) {
+#else
         if (sent_bytes && errno != EWOULDBLOCK) {
+#endif
           perror("sendq retry failed");
           self->remove_fd(self, fd);
           return;
@@ -411,7 +410,13 @@ void sm_resend(sm_t self, int fd) {
     sendq->head = head;
     if (head < tail) {
       // still have stuff to send
-      sm_on_debug(self, "ss.sendq<%p> defer len=%zd", sendq, (tail - head));
+      sm_on_debug(self,
+#ifdef WIN32
+          "ss.sendq<%p> defer len=%Id", 
+#else
+          "ss.sendq<%p> defer len=%zd", 
+#endif
+          sendq, (tail - head));
       break;
     }
     self->on_sent(self, fd, sendq->value, sendq->begin, tail - sendq->begin);
@@ -452,7 +457,11 @@ void sm_recv(sm_t self, int fd) {
   sm_private_t my = self->private_state;
   my->curr_recv_fd = fd;
   while (1) {
+#ifdef WIN32
+    ssize_t read_bytes = socket_receive_timeout(fd, my->tmp_buf, my->tmp_buf_length, RECV_FLAGS, 1000);
+#else
     ssize_t read_bytes = recv(fd, my->tmp_buf, my->tmp_buf_length, RECV_FLAGS);
+#endif
     if (read_bytes < 0) {
       if (errno != EWOULDBLOCK) {
         perror("recv failed");
@@ -460,7 +469,13 @@ void sm_recv(sm_t self, int fd) {
       }
       break;
     }
-    sm_on_debug(self, "ss.recv fd=%d len=%zd", fd, read_bytes);
+    sm_on_debug(self, 
+#ifdef WIN32
+        "ss.recv fd=%d len=%Id", 
+#else
+        "ss.recv fd=%d len=%zd", 
+#endif
+        fd, read_bytes);
     void *value = ht_get_value(my->fd_to_value, HT_KEY(fd));
     if (read_bytes == 0 ||
         self->on_recv(self, fd, value, my->tmp_buf, read_bytes)) {

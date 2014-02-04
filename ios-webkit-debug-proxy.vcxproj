@@ -52,14 +52,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;__STDC_LIMIT_MACROS;plist_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(SolutionDir)\vendors\include;$(SolutionDir)\getopt;$(SolutionDir)\libcompat;$(SolutionDir)\libusbmuxd;$(SolutionDir)\libplist\include;$(SolutionDir)\vendors\pcre\include;$(SolutionDir)\libimobiledevice\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(SolutionDir)\vendors\include;$(SolutionDir)\getopt;$(SolutionDir)\libcompat;$(SolutionDir)\libusbmuxd;$(SolutionDir)\libplist\include;$(SolutionDir)\vendors\pcre\include;$(SolutionDir)\libimobiledevice\include;$(SolutionDir)\vendors\socket;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)\$(Configuration);$(SolutionDir)\vendors\libgcc\lib;$(SolutionDir)\vendors\zlib\lib;$(SolutionDir)\vendors\openssl\lib;$(SolutionDir)\vendors\libxml2\lib;$(SolutionDir)\vendors\iconv\lib;$(SolutionDir)\vendors\pcre\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libimobiledevice.lib;libplist.lib;libusbmuxd.lib;libgcc.a;ws2_32.lib;zlib.lib;libcompat.lib;getopt.lib;libgen.lib;libcnary.lib;iconv.lib;libxml2.lib;libssl.a;libcrypto.a;pcre.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libimobiledevice.lib;libplist.lib;libusbmuxd.lib;libgcc.a;ws2_32.lib;zlib.lib;libcompat.lib;getopt.lib;libgen.lib;libcnary.lib;iconv.lib;libxml2.lib;libssl.a;libcrypto.a;pcre.lib;socket.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y "$(SolutionDir)vendors\pcre\bin\*.dll"  "$(OutDir)"</Command>

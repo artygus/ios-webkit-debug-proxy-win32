@@ -32,12 +32,12 @@ struct iwdpm_struct {
   iwdp_t iwdp;
 };
 typedef struct iwdpm_struct *iwdpm_t;
-#ifndef WIN32
-iwdpm_t iwdpm_new();
-#else
+#ifdef WIN32
 iwdpm_t iwdpm_new() {
-    return iwdpm_t();
+  return (iwdpm_t) calloc(sizeof(struct iwdpm_struct), 1);
 }
+#else
+iwdpm_t iwdpm_new();
 #endif
 void iwdpm_free(iwdpm_t self);
 
