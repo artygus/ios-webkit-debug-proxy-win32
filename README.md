@@ -16,7 +16,10 @@ Of course you can use any vm software to compile and run original ios-webkit-deb
 Notes
 -----
 
-To debug with with ios-webkit-debug-proxy you need to have iTunes installed.
+- To debug with with ios-webkit-debug-proxy you need to have iTunes installed
+- To compile you need [libimobiledevice-win32](https://github.com/artygus/libimobiledevice-win32) solution
+- The project compilation was tested with VS2012 only
+
 
 
 Troubleshooting
