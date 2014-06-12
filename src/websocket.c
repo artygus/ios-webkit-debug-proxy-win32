@@ -1,6 +1,10 @@
 // Google BSD license http://code.google.com/google_bsd_license.html
 // Copyright 2012 Google Inc. wrightt@google.com
 
+#ifdef WIN32
+#include <winsock2.h>
+#endif
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -325,7 +329,7 @@ ws_status ws_send_frame(ws_t self,
   }
 
   int8_t payload_n = (payload_length < 126 ? 0 :
-      payload_length < UINT16_MAX ? 2 : 8);
+      payload_length <= UINT16_MAX ? 2 : 8);
 
   size_t needed = (2 + payload_n + (is_masking ? 4 : 0) + payload_length);
   cb_clear(my->out);
@@ -339,10 +343,19 @@ ws_status ws_send_frame(ws_t self,
   *out_tail++ = ((is_masking ? 0x80 : 0) | (!payload_n ? payload_length :
         payload_n == 2 ? 126: 127));
 
-  int8_t j;
-  for (j = payload_n - 1; j >= 0; j--) {
-    *out_tail++ = (unsigned char)((payload_length >> (j<<3)) & 0xFF);
-  }
+  if (payload_n != 0) {
+      if (payload_n == 2) {
+          uint16_t sz16 = htons(payload_length);
+          memcpy(out_tail, &sz16, payload_n);
+      } else {
+          uint64_t sz64 = htonll(payload_length);
+          memcpy(out_tail, &sz64, payload_n);
+      }
+
+      int i;
+      for (i = 0; i < payload_n; i++) 
+        *out_tail++;
+  } 
 
   if (is_masking) {
     char mask[4];
