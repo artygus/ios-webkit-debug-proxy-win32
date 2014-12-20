@@ -63,7 +63,14 @@
       <AdditionalDependencies>libimobiledevice.lib;libplist.lib;libusbmuxd.lib;libgcc.a;ws2_32.lib;zlib.lib;libcompat.lib;getopt.lib;libgen.lib;libcnary.lib;iconv.lib;libxml2.lib;libssl.a;libcrypto.a;pcre.lib;socket.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "$(SolutionDir)vendors\pcre\bin\*.dll"  "$(OutDir)"</Command>
+      <Command>xcopy /y "$(SolutionDir)vendors\libxml2\bin\*.dll" "$(OutDir)"
+
+
+xcopy /y "$(SolutionDir)vendors\iconv\bin\*.dll" "$(OutDir)"
+
+xcopy /y "$(SolutionDir)vendors\zlib\bin\*.dll" "$(OutDir)"
+
+xcopy /y "$(SolutionDir)vendors\pcre\bin\*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -91,11 +98,12 @@
     <PostBuildEvent>
       <Command>xcopy /y "$(SolutionDir)vendors\libxml2\bin\*.dll" "$(OutDir)"
 
+
 xcopy /y "$(SolutionDir)vendors\iconv\bin\*.dll" "$(OutDir)"
 
-
 xcopy /y "$(SolutionDir)vendors\zlib\bin\*.dll" "$(OutDir)"
-xcopy /y "$(SolutionDir)vendors\pcre\bin\*.dll"  "$(OutDir)"</Command>
+
+xcopy /y "$(SolutionDir)vendors\pcre\bin\*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
