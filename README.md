@@ -24,8 +24,7 @@ Notes
 -----
 
 - To debug with with ios-webkit-debug-proxy you need to have iTunes installed (after installation you can safely remove iTunes from Programs and Features, just leave Apple Mobile Device Support and Apple Application Support applications)
-- To compile you need [libimobiledevice-win32](https://github.com/artygus/libimobiledevice-win32) solution
-- The project compilation was tested with VS2012 only
+- The project compilation was tested with VS2012 and VS2013 only
 
 
 Troubleshooting
