@@ -86,6 +86,7 @@ enum connection_type {
   CONNECTION_USBMUXD = 1
 };
 struct idevice_connection_private {
+  char *udid;  // added in v1.1.6
   enum connection_type type;
   void *data;
   void *ssl_data;
