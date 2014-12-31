@@ -11,7 +11,7 @@ For more info please refer to original [README](proxy.md)
 Binaries
 --------
 
-Get latest build from [SourceForge](http://sourceforge.net/projects/ios-webkit-debug-proxy-win32/files/latest/download)
+Get latest build from SourceForge : [Release](http://sourceforge.net/projects/ios-webkit-debug-proxy-win32/files/ios-webkit-debug-proxy-win32.zip/download) / [Debug](http://sourceforge.net/projects/ios-webkit-debug-proxy-win32/files/ios-webkit-debug-proxy-win32-debug.zip/download)
 
 
 Why win32 port?
