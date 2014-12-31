@@ -1,0 +1,9 @@
+[submodule "libplist"]
+	path = libplist
+	url = https://github.com/artygus/libplist
+[submodule "libimobiledevice"]
+	path = libimobiledevice
+	url = https://github.com/artygus/libimobiledevice
+[submodule "usbmuxd"]
+	path = usbmuxd
+	url = https://github.com/artygus/usbmuxd

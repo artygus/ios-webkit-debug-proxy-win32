@@ -1,0 +1,1 @@
+A precompiled Windows port of PCRElib downloaded from http://sourceforge.net/projects/gnuwin32/files/pcre/7.0/ (http://sourceforge.net/projects/gnuwin32/files/pcre/7.0/pcre-7.0-bin.zip/download, http://sourceforge.net/projects/gnuwin32/files/pcre/7.0/pcre-7.0-lib.zip/download)
