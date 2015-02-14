@@ -348,7 +348,7 @@ ws_status ws_send_frame(ws_t self,
           uint16_t sz16 = htons(payload_length);
           memcpy(out_tail, &sz16, payload_n);
       } else {
-          uint64_t sz64 = htonll(payload_length);
+          uint64_t sz64 = _byteswap_uint64(payload_length);
           memcpy(out_tail, &sz64, payload_n);
       }
 
