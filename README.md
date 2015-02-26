@@ -45,6 +45,7 @@ libxml2\* | MIT | http://xmlsoft.org
 openssl\* | OpenSSL | http://www.openssl.org
 pcre\* | BSD | www.pcre.org
 zlib\* | zlib | http://www.zlib.net
+getopt | BSD | http://www.gnu.org/software/libc/<br/>win32 port http://www.opensource.apple.com
 libimobiledevice | LGPL 2.1 | www.libimobiledevice.org<br/>win32 port https://github.com/MCE-KobyBo/libimobiledevice
 usbmuxd | LGPL 2.1 | www.libimobiledevice.org<br />win32 port https://github.com/MCE-KobyBo/usbmuxd
 libplist | LGPL 2.1 | www.libimobiledevice.org<br />win32 port https://github.com/MCE-KobyBo/libplist
