@@ -5,7 +5,7 @@ Win32 port of ios-webkit-debug-proxy (https://github.com/google/ios-webkit-debug
 
 The ios-webkit-debug-proxy allows developers to inspect MobileSafari and UIWebViews on real and simulated iOS devices via the [DevTools UI](https://developers.google.com/chrome-developer-tools/) and [WebKit Remote Debugging Protocol](https://developers.google.com/chrome-developer-tools/docs/remote-debugging).  DevTools requests are translated into Apple's [Remote Web Inspector service](https://developer.apple.com/technologies/safari/developer-tools.html) calls.
 
-For more info please refer to original [README](proxy.md)
+For more info please refer to the original [README](proxy.md)
 
 
 Binaries
@@ -32,3 +32,22 @@ Troubleshooting
 
 - If when starting app you get the "connect: No error" message, please check that Apple Mobile Device service is running
 - If you see open pages of the iOS device for debugging, but when click on them you get a blank dev tools window just click on the shield icon in the address bar and choose "Load unsafe script"
+
+
+Third Party Libraries
+---------------------
+
+Library | License | Project Link
+------- | ------- | ----
+libiconv\* | LGPL | http://www.gnu.org/software/libiconv/
+libgcc\* | GPL / GCC Runtime Library Exception | https://gcc.gnu.org
+libxml2\* | MIT | http://xmlsoft.org
+openssl\* | OpenSSL | http://www.openssl.org
+pcre\* | BSD | www.pcre.org
+zlib\* | zlib | http://www.zlib.net
+libimobiledevice | LGPL 2.1 | www.libimobiledevice.org<br/>win32 port https://github.com/MCE-KobyBo/libimobiledevice
+usbmuxd | LGPL 2.1 | www.libimobiledevice.org<br />win32 port https://github.com/MCE-KobyBo/usbmuxd
+libplist | LGPL 2.1 | www.libimobiledevice.org<br />win32 port https://github.com/MCE-KobyBo/libplist
+
+
+\* win32 binaries provided by http://gnuwin32.sourceforge.net
