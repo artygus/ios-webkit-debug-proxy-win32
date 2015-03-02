@@ -810,6 +810,8 @@ wi_status wi_recv_msg(wi_t self, const char *selector, const plist_t args) {
     if (!wi_recv_applicationSentData(self, args)) {
       return WI_SUCCESS;
     }
+  } else if (!strcmp(selector, "_rpc_applicationUpdated:")) {
+	  return WI_SUCCESS;
   }
 
   // invalid msg
