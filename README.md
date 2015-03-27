@@ -40,7 +40,6 @@ Third Party Libraries
 Library | License | Project Link
 ------- | ------- | ----
 libiconv\* | LGPL | http://www.gnu.org/software/libiconv/
-libgcc\* | GPL / GCC Runtime Library Exception | https://gcc.gnu.org
 libxml2\* | MIT | http://xmlsoft.org
 openssl\* | OpenSSL | http://www.openssl.org
 pcre\* | BSD | www.pcre.org
