@@ -30,7 +30,7 @@ Notes
 Troubleshooting
 ---------------
 
-- If when starting app you get the "connect: No error" message, please check that Apple Mobile Device service is running
+- If you get the "connect: No error" message, please check that Apple Mobile Device service is running
 - If you see open pages of the iOS device for debugging, but when click on them you get a blank dev tools window just click on the shield icon in the address bar and choose "Load unsafe script"
 
 
