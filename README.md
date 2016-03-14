@@ -26,6 +26,7 @@ Notes
 
 - To debug with with ios-webkit-debug-proxy you need to have iTunes installed (after installation you can safely remove iTunes from Programs and Features, just leave Apple Mobile Device Support and Apple Application Support applications)
 - The project compilation was tested with VS2012 and VS2013 only
+- If you want to debug using Safari DevTools on Windows you may find [this project](https://github.com/artygus/webkit-webinspector) useful
 
 
 Troubleshooting
