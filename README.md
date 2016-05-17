@@ -5,7 +5,7 @@ Win32 port of ios-webkit-debug-proxy (https://github.com/google/ios-webkit-debug
 
 The ios-webkit-debug-proxy allows developers to inspect MobileSafari and UIWebViews on real and simulated iOS devices via the [DevTools UI](https://developers.google.com/chrome-developer-tools/) and [WebKit Remote Debugging Protocol](https://developers.google.com/chrome-developer-tools/docs/remote-debugging).  DevTools requests are translated into Apple's [Remote Web Inspector service](https://developer.apple.com/technologies/safari/developer-tools.html) calls.
 
-For more info please refer to the original [README](proxy.md)
+For more info please refer to the original [README](https://github.com/google/ios-webkit-debug-proxy/blob/master/README.md)
 
 
 Binaries
