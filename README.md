@@ -13,7 +13,7 @@ Binaries
 
 Get latest MSVC build from SourceForge: [Release](http://sourceforge.net/projects/ios-webkit-debug-proxy-win32/files/ios-webkit-debug-proxy-win32.zip/download) / [Debug](http://sourceforge.net/projects/ios-webkit-debug-proxy-win32/files/ios-webkit-debug-proxy-win32-debug.zip/download)
 
-It's a bit complicated to support latest libimobiledevice libs as they don't officialy support MSVC, so I decided to stick to mingw32: [Build](http://sourceforge.net/projects/ios-webkit-debug-proxy-win32/files/test-builds/ios-webkit-debug-proxy-mingw32.zip/download)
+It's a bit complicated to support latest libimobiledevice libs as they don't officialy support MSVC, so I decided to stick to mingw32: [Build](http://sourceforge.net/projects/ios-webkit-debug-proxy-win32/files/test-builds/ios-webkit-debug-proxy-mingw32.zip/download), [x64 Build](https://sourceforge.net/projects/ios-webkit-debug-proxy-win32/files/ios-webkit-debug-proxy-win64.zip/download)
 
 Why win32 port?
 ---------------
