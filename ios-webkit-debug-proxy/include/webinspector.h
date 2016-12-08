@@ -126,6 +126,8 @@ struct wi_struct {
             const char *app_id, const char *dest_id,
             const char *data, size_t length);
 
+    wi_status(*on_applicationUpdated)(wi_t self,
+            const char *app_id, const char *dest_id);
 
     // For internal use only:
     wi_status (*on_error)(wi_t self, const char *format, ...);

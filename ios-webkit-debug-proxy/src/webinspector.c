@@ -683,6 +683,63 @@ wi_status wi_recv_applicationSentData(wi_t self, const plist_t args) {
   return ret;
 }
 
+/*
+https://github.com/jchuong/ios-webkit-debug-proxy/commit/7b0ad8fa29ae180c65c0e1c7d516f273ade95514
+
+_rpc_applicationUpdated:
+<dict>
+  <key>WIRApplicationBundleIdentifierKey</key>
+  <string>com.apple.WebKit.WebContent</string>
+  <key>WIRHostApplicationIdentifierKey</key>
+  <string>PID:409</string>
+  <key>WIRApplicationNameKey</key>
+  <string></string>
+  <key>WIRIsApplicationProxyKey</key>
+  <true/>
+  <key>WIRIsApplicationActiveKey</key>
+  <integer>0</integer>
+  <key>WIRApplicationIdentifierKey</key>
+  <string>PID:536</string>
+</dict>
+
+or
+
+<dict>
+  <key>WIRApplicationBundleIdentifierKey</key>
+  <string>com.apple.mobilesafari</string>
+  <key>WIRApplicationNameKey</key>
+  <string>Safari</string>
+  <key>WIRIsApplicationProxyKey</key>
+  <false/>
+  <key>WIRIsApplicationActiveKey</key>
+  <integer>0</integer>
+  <key>WIRApplicationIdentifierKey</key>
+  <string>PID:730</string>
+</dict>
+*/
+wi_status wi_recv_applicationUpdated(wi_t self, const plist_t args) {
+  char *app_id = NULL;
+  char *dest_id = NULL;
+  wi_status ret;
+  if (!wi_dict_get_required_string(args, "WIRHostApplicationIdentifierKey", &app_id)) {
+    if (!wi_dict_get_required_string(args, "WIRApplicationIdentifierKey", &dest_id) &&
+      !self->on_applicationUpdated(self, app_id, dest_id)) {
+      ret = WI_SUCCESS;
+    } else {
+      ret = WI_ERROR;
+    }
+  } else if (!wi_dict_get_required_string(args, "WIRApplicationNameKey", &app_id) &&
+             !wi_dict_get_required_string(args, "WIRApplicationIdentifierKey", &dest_id) &&
+             !self->on_applicationUpdated(self, app_id, dest_id)) {
+    ret = WI_SUCCESS;
+  } else {
+    ret = WI_ERROR;
+  }
+  free(app_id);
+  free(dest_id);
+  return ret;
+}
+
 wi_status wi_parse_length(wi_t self, const char *buf, size_t *to_length) {
   if (!buf || !to_length) {
     return WI_ERROR;
@@ -811,7 +868,9 @@ wi_status wi_recv_msg(wi_t self, const char *selector, const plist_t args) {
       return WI_SUCCESS;
     }
   } else if (!strcmp(selector, "_rpc_applicationUpdated:")) {
-	  return WI_SUCCESS;
+    if (!wi_recv_applicationUpdated(self, args)) {
+      return WI_SUCCESS;
+    }
   }
 
   // invalid msg
