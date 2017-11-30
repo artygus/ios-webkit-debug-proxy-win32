@@ -1,3 +1,7 @@
+**No longer maintained**
+
+The project is no longer maintained, windows support was introduced with [google/ios-webkit-debug-proxy#193](https://github.com/google/ios-webkit-debug-proxy/pull/193) in the original repo. You can find latest binaries on the releases page of [google/ios-webkit-debug-proxy](https://github.com/google/ios-webkit-debug-proxy).
+
 iOS WebKit Debug Proxy Win32
 ============================
 
